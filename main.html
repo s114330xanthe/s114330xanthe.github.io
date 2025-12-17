@@ -2,59 +2,145 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
-<title>懷舊童年卡通淘汰賽</title>
+<title>懷舊童年卡通</title>
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <style>
+  * { box-sizing: border-box; }
+
   body {
-    background: #111;
-    color: #fff;
+    margin: 0;
+    font-family: "Noto Sans TC", sans-serif;
+    background: linear-gradient(135deg, #ffecd2, #fcb69f);
+    overflow: hidden;
+  }
+
+  header {
+    position: fixed;
+    top: 0;
+    width: 100%;
     text-align: center;
-    font-family: sans-serif;
+    padding: 16px 0;
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 10;
   }
 
   #match {
     display: flex;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .side {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     justify-content: center;
-    gap: 40px;
-    margin-top: 40px;
-  }
-
-  .card {
-    width: 260px;
     cursor: pointer;
-    transition: all .4s ease;
+    transition: all 0.4s ease;
+    position: relative;
   }
 
-  .winner {
+  .side img {
+    max-width: 80%;
+    max-height: 70%;
+    transition: all 0.4s ease;
+  }
+
+  .side.left { background: #ffd6e0; }
+  .side.right { background: #d6f0ff; }
+
+  .winner img {
     transform: scale(1.15);
-    box-shadow: 0 0 30px gold;
+    box-shadow: 0 0 40px gold;
   }
 
-  .loser {
+  .loser img {
     filter: grayscale(100%);
-    opacity: .4;
-    transform: scale(.9);
+    opacity: 0.3;
+    transform: scale(0.9);
   }
 
-  .disabled {
-    pointer-events: none;
+  .disabled { pointer-events: none; }
+
+  .name {
+    margin-top: 16px;
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    background: rgba(255,255,255,0.75);
+    padding: 6px 16px;
+    border-radius: 20px;
+    opacity: 0;
+    transform: translateY(20px);
   }
 
-  #result img {
-    width: 320px;
-    margin-top: 20px;
+  .name.show {
+    animation: namePop 0.6s ease-out forwards;
   }
+
+  @keyframes namePop {
+    0% { opacity: 0; transform: translateY(20px) scale(0.9); }
+    60% { opacity: 1; transform: translateY(-4px) scale(1.05); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .milestone {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 64px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    z-index: 20;
+    animation: pop 1.2s ease;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    60% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #result {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #fff1eb, #ace0f9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    z-index: 30;
+    display: none;
+  }
+
+  #result img { max-width: 320px; margin: 20px 0; }
+
 </style>
 </head>
 
 <body>
-
-<h1 id="roundTitle">開始選擇</h1>
+<header>懷舊童年卡通</header>
 
 <div id="match">
-  <img id="img1" class="card">
-  <img id="img2" class="card">
+  <div class="side left" id="left">
+    <img id="img1">
+    <div class="name" id="name1"></div>
+  </div>
+  <div class="side right" id="right">
+    <img id="img2">
+    <div class="name" id="name2"></div>
+  </div>
 </div>
 
 <div id="result"></div>
@@ -114,89 +200,110 @@ let cartoons = [
 
 /* ===== 狀態 ===== */
 let pair = [];
+let milestoneShown = {16:false,4:false};
+
+/* ===== DOM ===== */
+const left = document.getElementById("left");
+const right = document.getElementById("right");
+const img1 = document.getElementById("img1");
+const img2 = document.getElementById("img2");
+const name1 = document.getElementById("name1");
+const name2 = document.getElementById("name2");
+const result = document.getElementById("result");
 
 /* ===== 工具 ===== */
 function randomPick() {
-  return cartoons[Math.floor(Math.random() * cartoons.length)];
+  return cartoons[Math.floor(Math.random()*cartoons.length)];
 }
 
-/* ===== 開始 ===== */
-function start() {
-  nextPair();
+function getNameFromImg(path) {
+  return path.split("/").pop().replace(/\.[^/.]+$/,"");
 }
 
-/* ===== 產生下一組 ===== */
+/* ===== 渲染對戰 ===== */
+function render() {
+  reset();
+
+  img1.src = pair[0].img;
+  img2.src = pair[1].img;
+
+  name1.innerText = getNameFromImg(pair[0].img);
+  name2.innerText = getNameFromImg(pair[1].img);
+
+  // 觸發名稱動畫
+  name1.classList.remove("show");
+  name2.classList.remove("show");
+  void name1.offsetWidth;
+  void name2.offsetWidth;
+  name1.classList.add("show");
+  name2.classList.add("show");
+}
+
+/* ===== 下一組 ===== */
 function nextPair() {
-  if (cartoons.length === 1) {
-    showWinner(cartoons[0]);
-    return;
+  if (cartoons.length === 1) { showWinner(cartoons[0]); return; }
+
+  if (cartoons.length === 16 && !milestoneShown[16]) {
+    showMilestone("16 強"); milestoneShown[16]=true; return;
+  }
+
+  if (cartoons.length === 4 && !milestoneShown[4]) {
+    showMilestone("4 強"); milestoneShown[4]=true; return;
   }
 
   let a = randomPick();
   let b;
-  do {
-    b = randomPick();
-  } while (a.id === b.id);
-
-  pair = [a, b];
+  do { b = randomPick(); } while(a.id===b.id);
+  pair = [a,b];
   render();
 }
 
-/* ===== 顯示 ===== */
-function render() {
-  reset();
-  img1.src = pair[0].img;
-  img2.src = pair[1].img;
+/* ===== 選擇 ===== */
+function choose(index){
+  const loser = pair[1-index];
+  left.classList.add("disabled");
+  right.classList.add("disabled");
+  (index===0?left:right).classList.add("winner");
+  (index===0?right:left).classList.add("loser");
 
-  if (cartoons.length === 16) roundTitle.innerText = "16 強";
-  else if (cartoons.length === 4) roundTitle.innerText = "4 強";
-  else roundTitle.innerText = `剩下 ${cartoons.length} 張`;
-}
-
-/* ===== 使用者選擇 ===== */
-function choose(index) {
-  const winner = pair[index];
-  const loser = pair[1 - index];
-
-  const cards = document.querySelectorAll(".card");
-  cards.forEach(c => c.classList.add("disabled"));
-
-  cards[index].classList.add("winner");
-  cards[1 - index].classList.add("loser");
-
-  setTimeout(() => {
-    cartoons = cartoons.filter(c => c.id !== loser.id);
+  setTimeout(()=>{
+    cartoons = cartoons.filter(c=>c.id!==loser.id);
     nextPair();
-  }, 700);
+  },700);
 }
 
-img1.onclick = () => choose(0);
-img2.onclick = () => choose(1);
+left.onclick = ()=>choose(0);
+right.onclick = ()=>choose(1);
 
 /* ===== 重置 ===== */
-function reset() {
-  document.querySelectorAll(".card").forEach(c => {
-    c.className = "card";
-  });
+function reset(){
+  left.className="side left";
+  right.className="side right";
+}
+
+/* ===== 里程碑動畫 ===== */
+function showMilestone(text){
+  const div=document.createElement("div");
+  div.className="milestone";
+  div.innerText=text;
+  document.body.appendChild(div);
+  setTimeout(()=>{div.remove(); nextPair();},1200);
 }
 
 /* ===== 冠軍 ===== */
-function showWinner(winner) {
-  match.style.display = "none";
-  result.innerHTML = `
+function showWinner(winner){
+  match.style.display="none";
+  result.style.display="flex";
+  result.innerHTML=`
     <h1>🏆 第一名誕生！</h1>
     <img src="${winner.img}">
-    <h2>${winner.name}</h2>
+    <h2>${getNameFromImg(winner.img)}</h2>
   `;
-
-  confetti({
-    particleCount: 250,
-    spread: 120,
-    origin: { y: 0.6 }
-  });
+  confetti({particleCount:300, spread:140, origin:{y:0.6}});
 }
 
-start();
+/* ===== 啟動 ===== */
+nextPair();
 </script>
 
 </body>
