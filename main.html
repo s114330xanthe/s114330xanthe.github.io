@@ -1,242 +1,157 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <title>懷舊童年卡通淘汰賽</title>
-<link rel="icon" href="5453.png">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <style>
-    body {
-        background: #f5f0e6;
-        font-family: "Microsoft JhengHei", sans-serif;
-        text-align: center;
-        padding: 20px;
-    }
+  body {
+    background: #111;
+    color: #fff;
+    text-align: center;
+    font-family: sans-serif;
+  }
 
-    h1 { margin-bottom: 20px; }
-    h2 { margin-top: 10px; }
+  #match {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin-top: 40px;
+  }
 
-    #roundInfo {
-        font-size: 20px;
-        margin-top: 10px;
-        color: #555;
-    }
+  .card {
+    width: 260px;
+    cursor: pointer;
+    transition: all .4s ease;
+  }
 
-    #container {
-        display: flex;
-        justify-content: center;
-        gap: 30px;
-        margin-top: 40px;
-    }
+  .winner {
+    transform: scale(1.15);
+    box-shadow: 0 0 30px gold;
+  }
 
-    .card {
-        width: 35%;
-        cursor: pointer;
-        transition: 0.3s;
-    }
+  .loser {
+    filter: grayscale(100%);
+    opacity: .4;
+    transform: scale(.9);
+  }
 
-    .card:hover {
-        transform: scale(1.05);
-    }
+  .disabled {
+    pointer-events: none;
+  }
 
-    img {
-        width: 100%;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-
-    #winner {
-        display: none;
-        margin-top: 50px;
-    }
-
-    #winner img {
-        width: 60%;
-    }
-
-    #winner h2 {
-        font-size: 34px;
-        margin-top: 20px;
-        color: #d62828;
-    }
+  #result img {
+    width: 320px;
+    margin-top: 20px;
+  }
 </style>
 </head>
+
 <body>
 
-<h1>懷舊童年卡通淘汰賽</h1>
-<h2 id="roundInfo"></h2>
+<h1 id="roundTitle">開始選擇</h1>
 
-<div id="container">
-    <div id="left" class="card"><img src=""></div>
-    <div id="right" class="card"><img src=""></div>
+<div id="match">
+  <img id="img1" class="card">
+  <img id="img2" class="card">
 </div>
 
-<div id="winner">
-    <h1>🎉 最終冠軍！ 🎉</h1>
-    <img id="winnerImg" src="">
-    <h2 id="winnerText"></h2>
-</div>
+<div id="result"></div>
 
 <script>
-// ------------------------------------------------------------
-// 1. 將你的 46 張圖片放入這裡
-// （示範前 6 張，你請補滿 46 張）
-// ------------------------------------------------------------
-let allImages = [
-    { name: "哆啦A夢", src: "images/doraemon.jpg" },
-    { name: "美少女戰士", src: "images/sailormoon.jpg" },
-    { name: "七龍珠", src: "images/dbz.jpg" },
-    { name: "庫洛魔法使", src: "images/ccs.jpg" },
-    { name: "蠟筆小新", src: "images/shinchan.jpg" },
-    { name: "名偵探柯南", src: "images/conan.jpg" },
-
-    // === 你在這裡繼續加到共 46 張 ===
-
+/* ===== 46 張圖片 ===== */
+let cartoons = [
+  { id: 1, name: "卡通1", img: "1.jpg" },
+  // ...
+  // 一直到 46
 ];
 
-// ------------------------------------------------------------
-// 淘汰賽階段設定
-// 46 → 16 → 4 → 1
-// ------------------------------------------------------------
-const ROUND_STEPS = [46, 16, 4, 1];
-let currentRoundIndex = 0;
-let candidatePool = [];   // 本輪參賽者
-let winnersNextRound = []; // 每輪勝出的進入下一輪
-let queue = []; // 出場順序
-let currentA = null;
-let currentB = null;
+/* ===== 狀態 ===== */
+let pair = [];
 
-// ------------------------------------------------------------
-// 工具：洗牌
-// ------------------------------------------------------------
-function shuffle(arr) {
-    return arr.sort(() => Math.random() - 0.5);
+/* ===== 工具 ===== */
+function randomPick() {
+  return cartoons[Math.floor(Math.random() * cartoons.length)];
 }
 
-// ------------------------------------------------------------
-// 啟動比賽
-// ------------------------------------------------------------
-function startRound() {
-    let target = ROUND_STEPS[currentRoundIndex];
-
-    if (currentRoundIndex === 0) {
-        // 第一輪：從全部開始
-        candidatePool = shuffle([...allImages]);
-    } else {
-        // 後續輪：用上一輪贏家
-        candidatePool = shuffle([...winnersNextRound]);
-        winnersNextRound = []; // 重置為下一輪的存放區
-    }
-
-    queue = [...candidatePool]; // 初始化對戰隊列
-    currentA = null;
-    currentB = null;
-
-    updateRoundText();
-    drawTwo();
+/* ===== 開始 ===== */
+function start() {
+  nextPair();
 }
 
-// ------------------------------------------------------------
-// 顯示當前輪次資訊
-// ------------------------------------------------------------
-function updateRoundText() {
-    let t = ROUND_STEPS[currentRoundIndex];
-    if (t === 46) document.getElementById("roundInfo").innerText = "第 1 輪：46 強 → 16 強";
-    if (t === 16) document.getElementById("roundInfo").innerText = "第 2 輪：16 強 → 4 強";
-    if (t === 4)  document.getElementById("roundInfo").innerText = "第 3 輪：4 強 → 冠軍";
-    if (t === 1)  document.getElementById("roundInfo").innerText = "最終決戰";
+/* ===== 產生下一組 ===== */
+function nextPair() {
+  if (cartoons.length === 1) {
+    showWinner(cartoons[0]);
+    return;
+  }
+
+  let a = randomPick();
+  let b;
+  do {
+    b = randomPick();
+  } while (a.id === b.id);
+
+  pair = [a, b];
+  render();
 }
 
-// ------------------------------------------------------------
-// 抽兩張圖片出來 PK
-// ------------------------------------------------------------
-function drawTwo() {
-    // 本輪已只剩一個 → 本輪結束
-    if (queue.length === 0 && currentA !== null && currentB === null) {
-        winnersNextRound.push(currentA);
+/* ===== 顯示 ===== */
+function render() {
+  reset();
+  img1.src = pair[0].img;
+  img2.src = pair[1].img;
 
-        currentRoundIndex++;
-
-        // 進入下一輪
-        if (currentRoundIndex < ROUND_STEPS.length - 1) {
-            startRound();
-        } else {
-            // 最終剩 1 張 → 冠軍
-            showWinner(currentA);
-        }
-        return;
-    }
-
-    // 初始化 A
-    if (!currentA) {
-        currentA = queue.shift();
-    }
-
-    // B 必須從 queue 補充
-    currentB = queue.shift();
-
-    // 顯示
-    document.querySelector("#left img").src = currentA.src;
-    document.querySelector("#right img").src = currentB.src;
+  if (cartoons.length === 16) roundTitle.innerText = "16 強";
+  else if (cartoons.length === 4) roundTitle.innerText = "4 強";
+  else roundTitle.innerText = `剩下 ${cartoons.length} 張`;
 }
 
-// ------------------------------------------------------------
-// 使用者選擇勝者
-// ------------------------------------------------------------
-function pick(winner, loser) {
-    // 優勝留下在 A
-    currentA = winner;
+/* ===== 使用者選擇 ===== */
+function choose(index) {
+  const winner = pair[index];
+  const loser = pair[1 - index];
 
-    // 輸的淘汰
-    // 不再使用
+  const cards = document.querySelectorAll(".card");
+  cards.forEach(c => c.classList.add("disabled"));
 
-    // 若沒有 B 可補，就進入 drawTwo 結算判斷
-    if (queue.length > 0) {
-        currentB = queue.shift();
-    } else {
-        currentB = null;
-    }
+  cards[index].classList.add("winner");
+  cards[1 - index].classList.add("loser");
 
-    // 若 B為 null，且 queue 也空 → 此輪結束
-    if (currentB === null && queue.length === 0) {
-        winnersNextRound.push(currentA);
-        currentA = null;
-        currentB = null;
-
-        currentRoundIndex++;
-
-        if (currentRoundIndex < ROUND_STEPS.length - 1) {
-            startRound();
-        } else {
-            showWinner(winnersNextRound[0]);
-        }
-        return;
-    }
-
-    drawTwo();
+  setTimeout(() => {
+    cartoons = cartoons.filter(c => c.id !== loser.id);
+    nextPair();
+  }, 700);
 }
 
-// ------------------------------------------------------------
-// 點擊左右圖片進行投票
-// ------------------------------------------------------------
-document.getElementById("left").onclick = () => pick(currentA, currentB);
-document.getElementById("right").onclick = () => pick(currentB, currentA);
+img1.onclick = () => choose(0);
+img2.onclick = () => choose(1);
 
-// ------------------------------------------------------------
-// 顯示冠軍
-// ------------------------------------------------------------
-function showWinner(w) {
-    document.getElementById("container").style.display = "none";
-    document.getElementById("winner").style.display = "block";
-    document.getElementById("roundInfo").style.display = "none";
-
-    document.getElementById("winnerImg").src = w.src;
-    document.getElementById("winnerText").innerText = "冠軍是：「" + w.name + "」！";
+/* ===== 重置 ===== */
+function reset() {
+  document.querySelectorAll(".card").forEach(c => {
+    c.className = "card";
+  });
 }
 
-// ------------------------------------------------------------
-// 開始第一輪
-// ------------------------------------------------------------
-startRound();
+/* ===== 冠軍 ===== */
+function showWinner(winner) {
+  match.style.display = "none";
+  result.innerHTML = `
+    <h1>🏆 第一名誕生！</h1>
+    <img src="${winner.img}">
+    <h2>${winner.name}</h2>
+  `;
+
+  confetti({
+    particleCount: 250,
+    spread: 120,
+    origin: { y: 0.6 }
+  });
+}
+
+start();
 </script>
 
 </body>
