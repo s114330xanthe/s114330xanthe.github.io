@@ -221,14 +221,14 @@ function getNameFromImg(path) {
 }
 
 /* ===== 渲染對戰 ===== */
+
 function render() {
   reset();
-
   img1.src = pair[0].img;
   img2.src = pair[1].img;
 
-  name1.innerText = getNameFromImg(pair[0].img);
-  name2.innerText = getNameFromImg(pair[1].img);
+  name1.innerText = pair[0].name;
+  name2.innerText = pair[1].name;
 
   // 觸發名稱動畫
   name1.classList.remove("show");
@@ -291,13 +291,14 @@ function showMilestone(text){
 }
 
 /* ===== 冠軍 ===== */
-function showWinner(winner){
-  match.style.display="none";
-  result.style.display="flex";
-  result.innerHTML=`
+
+function showWinner(winner) {
+  match.style.display = "none";
+  result.style.display = "flex";
+  result.innerHTML = `
     <h1>🏆 第一名誕生！</h1>
     <img src="${winner.img}">
-    <h2>${getNameFromImg(winner.img)}</h2>
+    <h2>${winner.name}</h2>
   `;
   confetti({particleCount:300, spread:140, origin:{y:0.6}});
 }
