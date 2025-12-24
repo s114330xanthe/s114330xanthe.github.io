@@ -1,311 +1,262 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>懷舊童年卡通</title>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+
+<!-- 網站圖像（Favicon）設定 -->
+<link rel="icon" href="favicon.png" type="image/png" />
+
 
 <style>
-  * { box-sizing: border-box; }
-
-  body {
-    margin: 0;
-    font-family: "Noto Sans TC", sans-serif;
-    background: linear-gradient(135deg, #ffecd2, #fcb69f);
-    overflow: hidden;
-  }
-
-  header {
-    position: fixed;
-    top: 0;
-    width: 100%;
-    text-align: center;
-    padding: 16px 0;
-    font-size: 28px;
-    font-weight: bold;
-    letter-spacing: 2px;
-    background: rgba(255, 255, 255, 0.7);
-    z-index: 10;
-  }
-<div id="prompt">選一個你比較喜歡的卡通</div>
-  #match {
-    display: flex;
-    width: 100vw;
-    height: 100vh;
-  }
-
-  .side {
-    width: 50%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.4s ease;
-    position: relative;
-  }
-
-  .side img {
-    max-width: 80%;
-    max-height: 70%;
-    transition: all 0.4s ease;
-  }
-
-  .side.left { background: #ffd6e0; }
-  .side.right { background: #d6f0ff; }
-
-  .winner img {
-    transform: scale(1.15);
-    box-shadow: 0 0 40px gold;
-  }
-
-  .loser img {
-    filter: grayscale(100%);
-    opacity: 0.3;
-    transform: scale(0.9);
-  }
-
-  .disabled { pointer-events: none; }
-
-  .name {
-    margin-top: 16px;
-    font-size: 22px;
-    font-weight: bold;
-    color: #333;
-    background: rgba(255,255,255,0.75);
-    padding: 6px 16px;
-    border-radius: 20px;
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  .name.show {
-    animation: namePop 0.6s ease-out forwards;
-  }
-
-  @keyframes namePop {
-    0% { opacity: 0; transform: translateY(20px) scale(0.9); }
-    60% { opacity: 1; transform: translateY(-4px) scale(1.05); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-  }
-
-  .milestone {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.75);
-    color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 64px;
-    font-weight: bold;
-    letter-spacing: 6px;
-    z-index: 20;
-    animation: pop 1.2s ease;
-  }
-
-  @keyframes pop {
-    0% { transform: scale(0.6); opacity: 0; }
-    60% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  #result {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(135deg, #fff1eb, #ace0f9);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 32px;
-    z-index: 30;
-    display: none;
-  }
-
-  #result img { max-width: 320px; margin: 20px 0; }
-
+* { box-sizing: border-box; }
+body {
+margin: 0;
+font-family: "Noto Sans TC", sans-serif;
+background: linear-gradient(135deg, #ffecd2, #fcb69f);
+display: flex;
+flex-direction: column;
+align-items: center;
+min-height: 100vh;
+}
+h1 {
+margin: 20px 0;
+font-size: 36px;
+color: #ff6b6b;
+text-shadow: 2px 2px #fff;
+}
+#roundInfo {
+font-size: 20px;
+margin-bottom: 10px;
+color: #333;
+}
+#arena {
+display: flex;
+width: 100%;
+max-width: 1000px;
+height: 60vh;
+}
+.card {
+flex: 1;
+margin: 10px;
+background: #fff;
+border-radius: 20px;
+ box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+transition: all 0.4s ease;
+position: relative;
+overflow: hidden;
+}
+.card img {
+max-width: 90%;
+max-height: 75%;
+border-radius: 12px;
+}
+.name {
+margin-top: 10px;
+font-size: 20px;
+font-weight: bold;
+color: #444;
+}
+.card.selected {
+transform: scale(1.08);
+z-index: 2;
+box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+.card.dimmed {
+filter: brightness(0.4);
+transform: scale(0.95);
+}
+#winnerScreen {
+display: none;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+ text-align: center;
+animation: pop 0.6s ease;
+}
+#winnerScreen img {
+max-width: 300px;
+border-radius: 20px;
+box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+}
+#winnerScreen h2 {
+font-size: 40px;
+color: #ff4757;
+margin: 20px 0 10px;
+}
+#confetti {
+position: fixed;
+inset: 0;
+pointer-events: none;
+background-image: radial-gradient(circle, rgba(255,255,255,0.8) 2px, transparent 2px);
+background-size: 20px 20px;
+animation: confetti 1s linear infinite;
+}
+@keyframes confetti {
+from { background-position: 0 0; }
+to { background-position: 0 200px; }
+}
+@keyframes pop {
+from { transform: scale(0.8); opacity: 0; }
+to { transform: scale(1); opacity: 1; }
+}
 </style>
 </head>
-
 <body>
-<header>懷舊童年卡通</header>
-
-<div id="match">
-  <div class="side left" id="left">
-    <img id="img1">
-    <div class="name" id="name1"></div>
-  </div>
-  <div class="side right" id="right">
-    <img id="img2">
-    <div class="name" id="name2"></div>
-  </div>
+<h1>童年卡通二選一</h1>
+<div id="roundInfo"></div>
+ 
+<div id="arena">
+<div class="card" id="left"></div>
+<div class="card" id="right"></div>
 </div>
 
-<div id="result"></div>
+
+<div id="winnerScreen">
+<div id="confetti"></div>
+<h2>🎉 第一名 🎉</h2>
+<img id="winnerImg" />
+<div class="name" id="winnerName"></div>
+</div>
 
 <script>
 /* ===== 48 張圖片 ===== */
-let cartoons = [
-  { id: 1, name: "飛天小女警", img: "0hAf14NyaAHkkMTQ7s9dphHjUbEjg_KQtPYjUFJ3lPFH0iLUUbMCpSMyxJQHo9LQpKODdWLCpIFS4geQoZOSs.jpg" },
-  { id: 2, name: "哈囉小梅子", img: "12359-p.jpg" },
-  { id: 3, name: "沙魚哥和美人魚", img: "12550-p_210712.jpg" },
-  { id: 4, name: "多拉A夢", img: "1521386115-1e6f703bb45d34a1ff4b93b3f18573c6.webp" },
-  { id: 5, name: "蠟筆小新", img: "161587446981.jpg" },
-  { id: 6, name: "瑪莎與熊", img: "1690865972-0.jpg" },
-  { id: 7, name: "汪汪隊立大功", img: "1724929370-2.jpg" },
-  { id: 8, name: "Ben10", img: "176424627860190_P7755969.png" },
-  { id: 9, name: "我們這一家", img: "20170703141328_24.jpeg" },
-  { id: 10, name: "名偵探柯南", img: "202110051759145878.jpg" },
-  { id: 11, name: "忍者哈特利", img: "202206211746449913_2016.jpg" },
-  { id: 12, name: "膽小狗英雄", img: "2176cc6a-d509-4fec-a676-d363a6d4a07d_m.jpg" },
-  { id: 13, name: "笑笑羊", img: "2fad7bdc-螢幕擷取畫面-2023-10-12-050453-542x800.webp" },
-  { id: 14, name: "櫻桃小丸子", img: "3F3F%3F.webp" },
-  { id: 15, name: "特務歐寶", img: "3e927b32e809eac81e4dafbe631fmco5.jpg" },
-  { id: 16, name: "米羅的莫非定律", img: "5d2092d8-4ac3-4f03-b331-95a0f47b0338.jpeg" },
-  { id: 17, name: "怪盜喬克", img: "600x600.jpg" },
-  { id: 18, name: "魚樂園", img: "640 (1).jpeg" },
-  { id: 19, name: "愛吃鬼巧達", img: "640 (1).png" },
-  { id: 20, name: "烏龍派出所", img: "640 (2).jpeg" },
-  { id: 21, name: "比利和曼蒂的恐懼大冒險", img: "640 (2).png" },
-  { id: 22, name: "可愛巧虎島", img: "640 (3).png" },
-  { id: 23, name: "珍珠美人魚", img: "640.jpeg" },
-  { id: 24, name: "探險活寶", img: "640.png" },
-  { id: 25, name: "童話王國", img: "79eb8fe4-60b9-4e18-ad0d-d478a7034732_m.jpg" },
-  { id: 26, name: "中國娃娃", img: "7b1f03b8-9b3f-4772-be1b-8f3c108c3a86.jpg" },
-  { id: 27, name: "替身企劃", img: "8a277a88-螢幕擷取畫面-2023-10-12-051319.jpg" },
-  { id: 28, name: "愛探險的朵拉", img: "9bd8fed8-52db-4774-955b-51cf9d07189a.jpg" },
-  { id: 29, name: "湯姆貓與捷利鼠",img: "Tom-and-jerry.jpg"},
-  { id: 30, name: "小公主蘇菲亞", img: "compose (1).webp" },
-  { id: 31, name: "萬能阿曼", img: "compose.webp" },
-  { id: 32, name: "下課後", img: "fdf2d028-6dfe-459a-ba2d-e962c30e59c6.jpeg" },
-  { id: 33, name: "阿甘妙世界", img: "hq720.jpg" },
-  { id: 34, name: "豆豆先生", img: "images (1).jpg" },
-  { id: 35, name: "米奇妙妙屋", img: "images (2).jpg" },
-  { id: 36, name: "校園搞怪王", img: "images (3).jpg" },
-  { id: 37, name: "熊出沒", img: "images (4).jpg" },
-  { id: 38, name: "海綿寶寶", img: "images (5).jpg" },
-  { id: 39, name: "麻辣女孩", img: "images.jpg" },
-  { id: 40, name: "頑皮豹與朋友們", img: "images.png" },
-  { id: 41, name: "喜羊羊與灰太狼", img: "maxresdefault.jpg" },
-  { id: 42, name: "星蝶公主", img: "resize (1).jpg" },
-  { id: 43, name: "小魔女DoReMi", img: "resize.jpg" },
-  { id: 44, name: "少年悍將GO！", img: "s202005110107324.jpg" },
-  { id: 45, name: "天線寶寶", img: "tetetubbies-1.jpg" },
-  { id: 46, name: "變身國王", img: "the-other-disney-channel-cartoons-that-were-currently-on-at-v0-l2fszky1vrgd1.webp" },
-  { id: 47, name: "冒險王奇克", img: "unnamed.png" },
-  { id: 48, name: "寶可夢", img: "神奇寶貝超世代_海報.jpg" },
+const allCharacters = [
+  {  name: "飛天小女警", img: "0hAf14NyaAHkkMTQ7s9dphHjUbEjg_KQtPYjUFJ3lPFH0iLUUbMCpSMyxJQHo9LQpKODdWLCpIFS4geQoZOSs.jpg" },
+  {  name: "哈囉小梅子", img: "12359-p.jpg" },
+  {  name: "沙魚哥和美人魚", img: "12550-p_210712.jpg" },
+  {  name: "多拉A夢", img: "1521386115-1e6f703bb45d34a1ff4b93b3f18573c6.webp" },
+  {  name: "蠟筆小新", img: "161587446981.jpg" },
+  {  name: "瑪莎與熊", img: "1690865972-0.jpg" },
+  {  name: "汪汪隊立大功", img: "1724929370-2.jpg" },
+  {  name: "Ben10", img: "176424627860190_P7755969.png" },
+  {  name: "我們這一家", img: "20170703141328_24.jpeg" },
+  {  name: "名偵探柯南", img: "202110051759145878.jpg" },
+  {  name: "忍者哈特利", img: "202206211746449913_2016.jpg" },
+  {  name: "膽小狗英雄", img: "2176cc6a-d509-4fec-a676-d363a6d4a07d_m.jpg" },
+  {  name: "笑笑羊", img: "2fad7bdc-螢幕擷取畫面-2023-10-12-050453-542x800.webp" },
+  {  name: "櫻桃小丸子", img: "3F3F%3F.webp" },
+  {  name: "特務歐寶", img: "3e927b32e809eac81e4dafbe631fmco5.jpg" },
+  {  name: "米羅的莫非定律", img: "5d2092d8-4ac3-4f03-b331-95a0f47b0338.jpeg" },
+  {  name: "怪盜喬克", img: "600x600.jpg" },
+  {  name: "魚樂園", img: "640 (1).jpeg" },
+  {  name: "愛吃鬼巧達", img: "640 (1).png" },
+  {  name: "烏龍派出所", img: "640 (2).jpeg" },
+  {  name: "比利和曼蒂的恐懼大冒險", img: "640 (2).png" },
+  {  name: "可愛巧虎島", img: "640 (3).png" },
+  {  name: "珍珠美人魚", img: "640.jpeg" },
+  {  name: "探險活寶", img: "640.png" },
+  {  name: "童話王國", img: "79eb8fe4-60b9-4e18-ad0d-d478a7034732_m.jpg" },
+  {  name: "中國娃娃", img: "7b1f03b8-9b3f-4772-be1b-8f3c108c3a86.jpg" },
+  {  name: "替身企劃", img: "8a277a88-螢幕擷取畫面-2023-10-12-051319.jpg" },
+  {  name: "愛探險的朵拉", img: "9bd8fed8-52db-4774-955b-51cf9d07189a.jpg" },
+  {  name: "湯姆貓與捷利鼠",img: "Tom-and-jerry.jpg"},
+  {  name: "小公主蘇菲亞", img: "compose (1).webp" },
+  {  name: "萬能阿曼", img: "compose.webp" },
+  {  name: "下課後", img: "fdf2d028-6dfe-459a-ba2d-e962c30e59c6.jpeg" },
+  {  name: "阿甘妙世界", img: "hq720.jpg" },
+  {  name: "豆豆先生", img: "images (1).jpg" },
+  {  name: "米奇妙妙屋", img: "images (2).jpg" },
+  {  name: "校園搞怪王", img: "images (3).jpg" },
+  {  name: "熊出沒", img: "images (4).jpg" },
+  {  name: "海綿寶寶", img: "images (5).jpg" },
+  {  name: "麻辣女孩", img: "images.jpg" },
+  {  name: "頑皮豹與朋友們", img: "images.png" },
+  {  name: "喜羊羊與灰太狼", img: "maxresdefault.jpg" },
+  {  name: "星蝶公主", img: "resize (1).jpg" },
+  {  name: "小魔女DoReMi", img: "resize.jpg" },
+  {  name: "少年悍將GO！", img: "s202005110107324.jpg" },
+  {  name: "天線寶寶", img: "tetetubbies-1.jpg" },
+  {  name: "變身國王", img: "the-other-disney-channel-cartoons-that-were-currently-on-at-v0-l2fszky1vrgd1.webp" },
+  {  name: "冒險王奇克", img: "unnamed.png" },
+  {  name: "寶可夢", img: "神奇寶貝超世代_海報.jpg" },
 ];
 
-/* ===== 狀態 ===== */
-let pair = [];
-let milestoneShown = {16:false,4:false};
 
-/* ===== DOM ===== */
+
+let pool = [...allCharacters];
+let nextRound = [];
+let currentPair = [];
+let stage = "48"; // 48 -> 16 -> 4 -> winner
+
+
 const left = document.getElementById("left");
 const right = document.getElementById("right");
-const img1 = document.getElementById("img1");
-const img2 = document.getElementById("img2");
-const name1 = document.getElementById("name1");
-const name2 = document.getElementById("name2");
-const result = document.getElementById("result");
+const roundInfo = document.getElementById("roundInfo");
+const arena = document.getElementById("arena");
+const winnerScreen = document.getElementById("winnerScreen");
 
-/* ===== 工具 ===== */
-function randomPick() {
-  return cartoons[Math.floor(Math.random()*cartoons.length)];
+
+function updateRoundInfo() {
+if (stage === "48") roundInfo.textContent = "48 強篩選 → 剩下 16 強";
+if (stage === "16") roundInfo.textContent = "16 強淘汰賽";
+if (stage === "4") roundInfo.textContent = "四強賽";
 }
 
-function getNameFromImg(path) {
-  return path.split("/").pop().replace(/\.[^/.]+$/,"");
+
+function drawPair() {
+updateRoundInfo();
+left.className = "card";
+right.className = "card";
+
+
+if (pool.length === 1) {
+showWinner(pool[0]);
+return;
 }
 
-/* ===== 渲染對戰 ===== */
 
-function render() {
-  reset();
-  img1.src = pair[0].img;
-  img2.src = pair[1].img;
+if (pool.length < 2) {
+pool = [...nextRound];
+nextRound = [];
+if (stage === "48") stage = "16";
+else if (stage === "16") stage = "4";
+else if (stage === "4") stage = "winner";
+drawPair();
+return;
+}
+ 
 
-  name1.innerText = pair[0].name;
-  name2.innerText = pair[1].name;
-
-  // 觸發名稱動畫
-  name1.classList.remove("show");
-  name2.classList.remove("show");
-  void name1.offsetWidth;
-  void name2.offsetWidth;
-  name1.classList.add("show");
-  name2.classList.add("show");
+currentPair = [pool.shift(), pool.shift()];
+renderCard(left, currentPair[0]);
+renderCard(right, currentPair[1]);
 }
 
-/* ===== 下一組 ===== */
-function nextPair() {
-  if (cartoons.length === 1) { showWinner(cartoons[0]); return; }
 
-  if (cartoons.length === 16 && !milestoneShown[16]) {
-    showMilestone("16 強"); milestoneShown[16]=true; return;
-  }
-
-  if (cartoons.length === 4 && !milestoneShown[4]) {
-    showMilestone("4 強"); milestoneShown[4]=true; return;
-  }
-
-  let a = randomPick();
-  let b;
-  do { b = randomPick(); } while(a.id===b.id);
-  pair = [a,b];
-  render();
+function renderCard(el, data) {
+el.innerHTML = `
+<img src="${data.img}" />
+<div class="name">${data.name}</div>
+`;
+el.onclick = () => select(el, data);
 }
 
-/* ===== 選擇 ===== */
-function choose(index){
-  const loser = pair[1-index];
-  left.classList.add("disabled");
-  right.classList.add("disabled");
-  (index===0?left:right).classList.add("winner");
-  (index===0?right:left).classList.add("loser");
 
-  setTimeout(()=>{
-    cartoons = cartoons.filter(c=>c.id!==loser.id);
-    nextPair();
-  },700);
+function select(el, data) {
+left.classList.add(el === left ? "selected" : "dimmed");
+right.classList.add(el === right ? "selected" : "dimmed");
+
+
+setTimeout(() => {
+nextRound.push(data);
+drawPair();
+}, 600);
 }
 
-left.onclick = ()=>choose(0);
-right.onclick = ()=>choose(1);
 
-/* ===== 重置 ===== */
-function reset(){
-  left.className="side left";
-  right.className="side right";
+function showWinner(data) {
+arena.style.display = "none";
+roundInfo.style.display = "none";
+winnerScreen.style.display = "flex";
+document.getElementById("winnerImg").src = data.img;
+document.getElementById("winnerName").textContent = data.name;
 }
 
-/* ===== 里程碑動畫 ===== */
-function showMilestone(text){
-  const div=document.createElement("div");
-  div.className="milestone";
-  div.innerText=text;
-  document.body.appendChild(div);
-  setTimeout(()=>{div.remove(); nextPair();},1200);
-}
 
-/* ===== 冠軍 ===== */
-
-function showWinner(winner) {
-  match.style.display = "none";
-  result.style.display = "flex";
-  result.innerHTML = `
-    <h1>🏆 第一名誕生！</h1>
-    <img src="${winner.img}">
-    <h2>${winner.name}</h2>
-  `;
-  confetti({particleCount:300, spread:140, origin:{y:0.6}});
-}
-
-/* ===== 啟動 ===== */
-nextPair();
-</script>
-
-</body>
-</html>
+drawPair();
