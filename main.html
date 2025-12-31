@@ -180,11 +180,13 @@ to { transform: scale(1); opacity: 1; }
 
 
 
-let pool = [...allCharacters];
-let nextRound = [];
-let currentPair = [];
-let stage = "48"; // 48 -> 16 -> 4 -> winner
+let pool = shuffle([...allCharacters]); // 當前可選池
+let survivors = [];      // 存活者
+let eliminated = new Set();
 
+let stage = "48";        // 48 -> 16 -> 4 -> roundRobin -> winner
+let roundRobinPairs = [];
+let scores = new Map();
 
 const left = document.getElementById("left");
 const right = document.getElementById("right");
@@ -192,74 +194,114 @@ const roundInfo = document.getElementById("roundInfo");
 const arena = document.getElementById("arena");
 const winnerScreen = document.getElementById("winnerScreen");
 
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
 
+/* ===== 更新標題 ===== */
 function updateRoundInfo() {
-if (stage === "48") roundInfo.textContent = "48 強篩選 → 剩下 16 強";
-if (stage === "16") roundInfo.textContent = "16 強淘汰賽";
-if (stage === "4") roundInfo.textContent = "四強賽";
+  if (stage === "48") roundInfo.textContent = `自由淘汰中（剩 ${pool.length} 張 → 16 強）`;
+  if (stage === "16") roundInfo.textContent = `16 強淘汰賽`;
+  if (stage === "4") roundInfo.textContent = `產生四強`;
+  if (stage === "roundRobin") roundInfo.textContent = `四強車輪戰`;
 }
 
-
+/* ===== 主要流程 ===== */
 function drawPair() {
-updateRoundInfo();
-left.className = "card";
-right.className = "card";
+  updateRoundInfo();
+  left.className = "card";
+  right.className = "card";
 
+  // 🎉 最終冠軍
+  if (stage === "winner") return;
 
-if (pool.length === 1) {
-showWinner(pool[0]);
-return;
+  // 🟡 48 → 16（自由淘汰）
+  if (stage === "48") {
+    if (pool.length <= 16) {
+      stage = "16";
+      pool = shuffle(pool);
+      drawPair();
+      return;
+    }
+  }
+
+  // 🟠 16 → 4
+  if (stage === "16" && pool.length === 4) {
+    stage = "roundRobin";
+    setupRoundRobin();
+    drawRoundRobin();
+    return;
+  }
+
+  // 正常抽兩張（保證不同）
+  const a = pool.shift();
+  const b = pool.shift();
+
+  renderCard(left, a);
+  renderCard(right, b);
 }
 
+/* ===== 四強車輪戰 ===== */
+function setupRoundRobin() {
+  scores.clear();
+  pool.forEach(c => scores.set(c.name, 0));
 
-if (pool.length < 2) {
-pool = [...nextRound];
-nextRound = [];
-if (stage === "48") stage = "16";
-else if (stage === "16") stage = "4";
-else if (stage === "4") stage = "winner";
-drawPair();
-return;
-}
- 
-
-currentPair = [pool.shift(), pool.shift()];
-renderCard(left, currentPair[0]);
-renderCard(right, currentPair[1]);
+  roundRobinPairs = [];
+  for (let i = 0; i < pool.length; i++) {
+    for (let j = i + 1; j < pool.length; j++) {
+      roundRobinPairs.push([pool[i], pool[j]]);
+    }
+  }
 }
 
+function drawRoundRobin() {
+  if (roundRobinPairs.length === 0) {
+    const winner = [...scores.entries()].sort((a,b)=>b[1]-a[1])[0][0];
+    const data = pool.find(c => c.name === winner);
+    showWinner(data);
+    return;
+  }
 
+  const [a, b] = roundRobinPairs.shift();
+  renderCard(left, a);
+  renderCard(right, b);
+}
+
+/* ===== 卡片渲染 ===== */
 function renderCard(el, data) {
-el.innerHTML = `
-<img src="${data.img}" />
-<div class="name">${data.name}</div>
-`;
-el.onclick = () => select(el, data);
+  el.innerHTML = `
+    <img src="${data.img}">
+    <div class="name">${data.name}</div>
+  `;
+  el.onclick = () => select(el, data);
 }
 
-
+/* ===== 選擇處理 ===== */
 function select(el, data) {
-left.classList.add(el === left ? "selected" : "dimmed");
-right.classList.add(el === right ? "selected" : "dimmed");
+  left.classList.add(el === left ? "selected" : "dimmed");
+  right.classList.add(el === right ? "selected" : "dimmed");
 
-
-setTimeout(() => {
-nextRound.push(data);
-drawPair();
-}, 600);
+  setTimeout(() => {
+    if (stage === "roundRobin") {
+      scores.set(data.name, scores.get(data.name) + 1);
+      drawRoundRobin();
+    } else {
+      pool.push(data);
+      drawPair();
+    }
+  }, 600);
 }
 
-
+/* ===== 冠軍畫面 ===== */
 function showWinner(data) {
-arena.style.display = "none";
-roundInfo.style.display = "none";
-winnerScreen.style.display = "flex";
-document.getElementById("winnerImg").src = data.img;
-document.getElementById("winnerName").textContent = data.name;
+  stage = "winner";
+  arena.style.display = "none";
+  roundInfo.style.display = "none";
+  winnerScreen.style.display = "flex";
+  document.getElementById("winnerImg").src = data.img;
+  document.getElementById("winnerName").textContent = data.name;
 }
-
 
 drawPair();
 </script>
-</body>
-</html>
+四、你現在這個版本已經是「可公開玩的
