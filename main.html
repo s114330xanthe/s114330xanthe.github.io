@@ -216,26 +216,38 @@ function resetCards() {
   void left.offsetWidth;
   void right.offsetWidth;
 }
-
 function nextMatch() {
   resetCards();
 
   roundInfo.textContent = `目前階段：${stages[stageIndex].name}`;
 
-  // 🎯 本階段完成 → 進入下一階段
-  if (winners.length === stages[stageIndex].target) {
-    pool = shuffle([...winners]);
-    winners = [];
-    stageIndex++;
-  }
+  const currentStage = stages[stageIndex];
 
-  // 🏆 冠軍誕生
-  if (stages[stageIndex].target === 1 && pool.length === 1) {
+  // 🏆 冠軍誕生（最優先）
+  if (currentStage.target === 1 && pool.length === 1) {
     showWinner(pool[0]);
     return;
   }
 
-  // 補池
+  // 🔴 四強決賽（4 → 1）：直接淘汰，不用 winners
+  if (currentStage.target === 1) {
+    const a = pool.shift();
+    const b = pool.shift();
+    renderCard(left, a);
+    renderCard(right, b);
+    return;
+  }
+
+  // 🎯 本階段完成 → 進入下一階段
+  if (winners.length === currentStage.target) {
+    pool = shuffle([...winners]);
+    winners = [];
+    stageIndex++;
+    nextMatch();
+    return;
+  }
+
+  // 補池（避免不足兩張）
   if (pool.length < 2) {
     pool = shuffle([...winners]);
     winners = [];
@@ -247,7 +259,6 @@ function nextMatch() {
   renderCard(left, a);
   renderCard(right, b);
 }
-
 
 function renderCard(el, data) {
   el.innerHTML = `
@@ -261,11 +272,14 @@ function choose(winner, el) {
   left.classList.add(el === left ? "selected" : "dimmed");
   right.classList.add(el === right ? "selected" : "dimmed");
 
-  setTimeout(() => {
+ setTimeout(() => {
+  if (stages[stageIndex].target === 1) {
+    pool.push(winner); // 四強賽直接回 pool
+  } else {
     winners.push(winner);
-    nextMatch();
-  }, 500);
-}
+  }
+  nextMatch();
+}, 500);
 
 function showWinner(data) {
   arena.style.display = "none";
