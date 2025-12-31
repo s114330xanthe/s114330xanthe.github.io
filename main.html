@@ -180,13 +180,10 @@ to { transform: scale(1); opacity: 1; }
 
 
 
-let pool = shuffle([...allCharacters]); // 當前可選池
-let survivors = [];      // 存活者
-let eliminated = new Set();
 
-let stage = "48";        // 48 -> 16 -> 4 -> roundRobin -> winner
-let roundRobinPairs = [];
-let scores = new Map();
+let pool = shuffle([...allCharacters]);
+let winners = [];
+let stage = "filter"; // filter -> 16 -> 4 -> end
 
 const left = document.getElementById("left");
 const right = document.getElementById("right");
@@ -194,46 +191,44 @@ const roundInfo = document.getElementById("roundInfo");
 const arena = document.getElementById("arena");
 const winnerScreen = document.getElementById("winnerScreen");
 
+function updateRoundInfo() {
+  if (stage === "filter") roundInfo.textContent = "48 張篩選中（留下 16 張）";
+  if (stage === "16") roundInfo.textContent = "16 強賽（選出前 4）";
+  if (stage === "4") roundInfo.textContent = "四強決賽";
+}
+
 function shuffle(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
 
-/* ===== 更新標題 ===== */
-function updateRoundInfo() {
-  if (stage === "48") roundInfo.textContent = `自由淘汰中（剩 ${pool.length} 張 → 16 強）`;
-  if (stage === "16") roundInfo.textContent = `16 強淘汰賽`;
-  if (stage === "4") roundInfo.textContent = `產生四強`;
-  if (stage === "roundRobin") roundInfo.textContent = `四強車輪戰`;
-}
-
-/* ===== 主要流程 ===== */
-function drawPair() {
+function nextMatch() {
   updateRoundInfo();
+
   left.className = "card";
   right.className = "card";
 
-  // 🎉 最終冠軍
-  if (stage === "winner") return;
-
-  // 🟡 48 → 16（自由淘汰）
-  if (stage === "48") {
-    if (pool.length <= 16) {
-      stage = "16";
-      pool = shuffle(pool);
-      drawPair();
-      return;
-    }
+  // 🎯 階段結束判斷
+  if (stage === "filter" && pool.length === 16) {
+    stage = "16";
+    pool = shuffle([...pool]);
   }
 
-  // 🟠 16 → 4
   if (stage === "16" && pool.length === 4) {
-    stage = "roundRobin";
-    setupRoundRobin();
-    drawRoundRobin();
+    stage = "4";
+    pool = shuffle([...pool]);
+  }
+
+  if (stage === "4" && pool.length === 1) {
+    showWinner(pool[0]);
     return;
   }
 
-  // 正常抽兩張（保證不同）
+  // 補輪
+  if (pool.length < 2) {
+    pool = shuffle([...winners]);
+    winners = [];
+  }
+
   const a = pool.shift();
   const b = pool.shift();
 
@@ -241,60 +236,25 @@ function drawPair() {
   renderCard(right, b);
 }
 
-/* ===== 四強車輪戰 ===== */
-function setupRoundRobin() {
-  scores.clear();
-  pool.forEach(c => scores.set(c.name, 0));
-
-  roundRobinPairs = [];
-  for (let i = 0; i < pool.length; i++) {
-    for (let j = i + 1; j < pool.length; j++) {
-      roundRobinPairs.push([pool[i], pool[j]]);
-    }
-  }
-}
-
-function drawRoundRobin() {
-  if (roundRobinPairs.length === 0) {
-    const winner = [...scores.entries()].sort((a,b)=>b[1]-a[1])[0][0];
-    const data = pool.find(c => c.name === winner);
-    showWinner(data);
-    return;
-  }
-
-  const [a, b] = roundRobinPairs.shift();
-  renderCard(left, a);
-  renderCard(right, b);
-}
-
-/* ===== 卡片渲染 ===== */
 function renderCard(el, data) {
   el.innerHTML = `
     <img src="${data.img}">
     <div class="name">${data.name}</div>
   `;
-  el.onclick = () => select(el, data);
+  el.onclick = () => choose(data, el);
 }
 
-/* ===== 選擇處理 ===== */
-function select(el, data) {
+function choose(winner, el) {
   left.classList.add(el === left ? "selected" : "dimmed");
   right.classList.add(el === right ? "selected" : "dimmed");
 
   setTimeout(() => {
-    if (stage === "roundRobin") {
-      scores.set(data.name, scores.get(data.name) + 1);
-      drawRoundRobin();
-    } else {
-      pool.push(data);
-      drawPair();
-    }
-  }, 600);
+    winners.push(winner);
+    nextMatch();
+  }, 500);
 }
 
-/* ===== 冠軍畫面 ===== */
 function showWinner(data) {
-  stage = "winner";
   arena.style.display = "none";
   roundInfo.style.display = "none";
   winnerScreen.style.display = "flex";
@@ -302,5 +262,5 @@ function showWinner(data) {
   document.getElementById("winnerName").textContent = data.name;
 }
 
-drawPair();
+nextMatch();
 </script>
