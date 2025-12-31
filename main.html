@@ -182,12 +182,17 @@ to { transform: scale(1); opacity: 1; }
 
 
 
+const stages = [
+  { name: "48 → 24（第一輪篩選）", target: 24 },
+  { name: "24 → 16（完成 16 強）", target: 16 },
+  { name: "16 → 8（16 強賽）", target: 8 },
+  { name: "8 → 4（晉級四強）", target: 4 },
+  { name: "4 → 1（冠軍決戰）", target: 1 }
+];
+
+let stageIndex = 0;
 let pool = shuffle([...allCharacters]);
 let winners = [];
-
-// 🔑 關鍵：每一階段要「留下幾張」
-let targetCount = 16; // 48 → 16（篩選）
-let stage = "filter"; // filter → 16 → 4 → end
 
 const left = document.getElementById("left");
 const right = document.getElementById("right");
@@ -213,27 +218,24 @@ function resetCards() {
 }
 
 function nextMatch() {
-  updateRoundInfo();
   resetCards();
 
-  // 🎯 如果已經達成目標數量 → 進下一階段
-  if (pool.length === targetCount) {
-    if (stage === "filter") {
-      stage = "16";
-      targetCount = 4;
-    } else if (stage === "16") {
-      stage = "4";
-      targetCount = 1;
-    } else if (stage === "4") {
-      showWinner(pool[0]);
-      return;
-    }
+  roundInfo.textContent = `目前階段：${stages[stageIndex].name}`;
 
+  // 🎯 本階段完成 → 進入下一階段
+  if (winners.length === stages[stageIndex].target) {
+    pool = shuffle([...winners]);
     winners = [];
-    pool = shuffle([...pool]);
+    stageIndex++;
   }
 
-  // 補輪（一輪比完）
+  // 🏆 冠軍誕生
+  if (stages[stageIndex].target === 1 && pool.length === 1) {
+    showWinner(pool[0]);
+    return;
+  }
+
+  // 補池
   if (pool.length < 2) {
     pool = shuffle([...winners]);
     winners = [];
@@ -245,6 +247,7 @@ function nextMatch() {
   renderCard(left, a);
   renderCard(right, b);
 }
+
 
 function renderCard(el, data) {
   el.innerHTML = `
