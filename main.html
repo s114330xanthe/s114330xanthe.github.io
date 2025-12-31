@@ -196,7 +196,13 @@ function updateRoundInfo() {
   if (stage === "16") roundInfo.textContent = "16 強賽（選出前 4）";
   if (stage === "4") roundInfo.textContent = "四強決賽";
 }
+function resetCards() {
+  left.className = "card";
+  right.className = "card";
 
+  void left.offsetWidth;
+  void right.offsetWidth;
+}
 function shuffle(arr) {
   return arr.sort(() => Math.random() - 0.5);
 }
@@ -204,8 +210,7 @@ function shuffle(arr) {
 function nextMatch() {
   updateRoundInfo();
 
-  left.className = "card";
-  right.className = "card";
+resetCards();
 
   // 🎯 階段結束判斷
   if (stage === "filter" && pool.length === 16) {
